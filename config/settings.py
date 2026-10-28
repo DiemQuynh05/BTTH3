@@ -18,7 +18,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_app",
+    "accounts",
+    "candidates",
+    "employers",
+    "jobs",
+    "applications",
 ]
 
 MIDDLEWARE = [
@@ -34,7 +38,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -63,7 +67,7 @@ def database_config() -> dict[str, object]:
         }
     return {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "he_thong_tim_viec.db",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 
 
@@ -73,4 +77,11 @@ TIME_ZONE = "Asia/Ho_Chi_Minh"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+AUTH_USER_MODEL = "accounts.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
