@@ -1,0 +1,14 @@
+<article class="job-card">
+  <div class="card-body">
+    <div class="d-flex align-items-start gap-3">
+      <div class="logo-placeholder">{{ job.employer.company_name|first|upper }}</div>
+      <div class="min-w-0">
+        <a class="job-title text-decoration-none d-block" href="{% url 'job-detail' job.pk %}">{{ job.title }}</a>
+        <div class="text-muted small mt-1">{{ job.employer.company_name }}</div>
+      </div>
+    </div>
+    <div class="meta-row d-flex flex-wrap gap-3 mt-4"><span><i class="bi bi-geo-alt me-1"></i>{{ job.location }}</span><span><i class="bi bi-briefcase me-1"></i>{{ job.get_job_type_display }}</span></div>
+    <div class="d-flex justify-content-between align-items-center mt-3"><span class="salary">{% if job.salary_min and job.salary_max %}{{ job.salary_min|floatformat:0 }} – {{ job.salary_max|floatformat:0 }} VNĐ{% elif job.salary_min %}Từ {{ job.salary_min|floatformat:0 }} VNĐ{% else %}Thỏa thuận{% endif %}</span><span class="small text-muted">{{ job.created_at|timesince }} trước</span></div>
+    <div class="mt-auto pt-3 d-flex gap-2"><a href="{% url 'job-detail' job.pk %}" class="btn btn-outline-primary btn-sm flex-grow-1">Xem chi tiết <i class="bi bi-arrow-up-right ms-1"></i></a></div>
+  </div>
+</article>
