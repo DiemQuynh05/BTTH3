@@ -22,20 +22,22 @@ Mô hình ORM và SQLite vẫn được giữ để chạy backend hiện tại.
 - Python 3.11 trở lên
 - `venv`
 
-## Khởi tạo và chạy backend
+## Khởi tạo và chạy backend Django
 
 PowerShell:
 
 ```powershell
-cd C:\Hoctap\HTKDTM\BTTH3\He_Thong_Tim_Viec
+cd C:\Hoctap\HTKDTM\BTTH3\BTTH3
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-uvicorn app.main:app --reload
+python manage.py check
+python manage.py runserver
 ```
 
-Mở tài liệu API tại <http://127.0.0.1:8000/docs>.
+Health check tại <http://127.0.0.1:8000/health/> và trang quản trị tại
+<http://127.0.0.1:8000/admin/>.
 
 ## Khởi tạo PostgreSQL
 
