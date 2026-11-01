@@ -84,4 +84,5 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 AUTH_USER_MODEL = "accounts.User"
+MATCHING_MODEL_PATH = Path(os.getenv("MATCHING_MODEL_PATH", BASE_DIR / "ml_models" / "matching_model.joblib"))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

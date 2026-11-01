@@ -31,6 +31,7 @@ class Resume(models.Model):
     file = models.FileField(upload_to="resumes/", validators=[FileExtensionValidator(["pdf", "doc", "docx"])])
     original_filename = models.CharField(max_length=255)
     resume_text = models.TextField(blank=True)
+    parsed_data = models.JSONField(default=dict, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

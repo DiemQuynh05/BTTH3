@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.forms import ApplicationForm
+from applications.matching import calculate_matching_score, rescore_applications
 from applications.models import Application
 
 from .forms import JobForm
@@ -35,7 +36,12 @@ def job_list(request):
 def job_detail(request, pk):
     job = get_object_or_404(Job.objects.select_related("employer").prefetch_related("skills"), pk=pk)
     applied = request.user.is_authenticated and Application.objects.filter(job=job, candidate__user=request.user).exists()
-    return render(request, "jobs/detail.html", {"job": job, "applied": applied, "application_form": ApplicationForm()})
+    match = None
+    candidate = getattr(request.user, "candidate_profile", None) if request.user.is_authenticated else None
+    if candidate is not None:
+        score, explanation = calculate_matching_score(candidate, job)
+        match = {"score": score, "explanation": explanation}
+    return render(request, "jobs/detail.html", {"job": job, "applied": applied, "application_form": ApplicationForm(), "match": match})
 
 
 def _employer(request):
@@ -75,6 +81,19 @@ def employer_job_edit(request, pk):
         messages.success(request, "Tin tuyển dụng đã được cập nhật.")
         return redirect("employer-job-list")
     return render(request, "jobs/form.html", {"form": form, "title": "Chỉnh sửa tin tuyển dụng"})
+
+
+@login_required
+def employer_job_applicants(request, pk):
+    job = get_object_or_404(Job, pk=pk, employer__user=request.user)
+    if request.method == "POST":
+        count = rescore_applications(job.applications.all())
+        messages.success(request, f"Đã tính lại điểm tương thích cho {count} hồ sơ.")
+        return redirect("employer-job-applicants", pk=job.pk)
+    applications = job.applications.select_related("candidate__user", "resume").order_by(
+        F("matching_score").desc(nulls_last=True), "-applied_at"
+    )
+    return render(request, "jobs/applicants.html", {"job": job, "applications": applications})
 
 
 @login_required
