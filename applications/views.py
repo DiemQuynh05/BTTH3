@@ -8,6 +8,7 @@ from candidates.models import CandidateProfile
 from jobs.models import Job
 
 from .forms import ApplicationForm
+from .matching import calculate_matching_score
 from .models import Application
 
 
@@ -28,6 +29,7 @@ def apply(request, job_id):
         application.job = job
         try:
             application.full_clean()
+            application.matching_score, application.matching_explanation = calculate_matching_score(candidate, job, application.resume)
             application.save()
         except (ValidationError, IntegrityError) as exc:
             form.add_error(None, str(exc))

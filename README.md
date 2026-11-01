@@ -14,6 +14,8 @@ python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_data
 python manage.py seed_demo_data
+python manage.py train_matching_model
+python manage.py rescore_applications
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -95,6 +97,7 @@ python manage.py shell -c "from accounts.models import User; from candidates.mod
 - `/accounts/register/`, `/accounts/login/`: xác thực
 - `/candidates/profile/`: hồ sơ, CV ứng viên
 - `/employers/profile/`, `/employers/jobs/`: hồ sơ và quản lý tin
+- `/employers/jobs/<id>/applicants/`: xếp hạng ứng viên theo điểm AI Matching
 - `/applications/`: danh sách hồ sơ đã ứng tuyển
 - `/admin/`: quản trị dữ liệu
 
@@ -106,11 +109,25 @@ python manage.py test
 pytest
 ```
 
-Các chức năng AI Matching và BI nâng cao chưa kết nối API, hiện có phần giới
-thiệu giao diện để mở rộng về sau.
-
 `seed_demo_data` tạo thêm 100 ứng viên, 20 nhà tuyển dụng, 50 tin tuyển dụng,
-100 CV PDF mẫu, dữ liệu kỹ năng và 200 hồ sơ ứng tuyển. Điểm tương thích hiện
-được tính bằng thuật toán **Rule-based Matching** minh bạch, không phải mô hình
-Machine Learning và không gọi API AI bên ngoài. Command có thể chạy lặp lại mà
-không nhân đôi dữ liệu demo.
+100 CV PDF mẫu, dữ liệu kỹ năng và 200 hồ sơ ứng tuyển. Command có thể chạy lặp
+lại mà không nhân đôi dữ liệu demo.
+
+## AI Matching (phân tích CV và điểm tương thích)
+
+Mô hình Machine Learning chạy cục bộ bằng scikit-learn, không gọi API AI bên
+ngoài. Chi tiết thiết kế, đặc trưng và kết quả đánh giá: [docs/mo-hinh-ai-matching.md](docs/mo-hinh-ai-matching.md).
+
+```powershell
+python manage.py train_matching_model                     # huấn luyện (mặc định: dữ liệu mô phỏng)
+python manage.py train_matching_model --source combined   # khi đã có kết quả tuyển dụng thật
+python manage.py rescore_applications                     # phân tích lại CV và tính lại điểm
+```
+
+- Mô hình lưu tại `ml_models/matching_model.joblib` (đổi bằng biến môi trường
+  `MATCHING_MODEL_PATH`), kèm báo cáo chỉ số `matching_model.json`.
+- Chưa huấn luyện thì hệ thống tự dùng **Rule-based Matching** làm phương án dự phòng.
+- CV PDF (dạng văn bản) và DOCX được phân tích tự động khi tải lên; file `.doc`
+  và PDF dạng ảnh scan chưa trích xuất được nội dung.
+- Nhà tuyển dụng xem bảng xếp hạng ứng viên tại `/employers/jobs/<id>/applicants/`;
+  ứng viên thấy điểm phù hợp trên trang chi tiết tin tuyển dụng.

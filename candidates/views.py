@@ -6,6 +6,7 @@ from jobs.models import Skill
 
 from .forms import CandidateProfileForm, ResumeForm
 from .models import CandidateProfile, CandidateSkill
+from .services import process_resume
 
 
 @login_required
@@ -25,7 +26,11 @@ def profile(request):
             resume.candidate = candidate
             resume.original_filename = resume.file.name
             resume.save()
-            messages.success(request, "CV đã được tải lên.")
+            process_resume(resume)
+            if resume.parsed_data.get("extracted_from_file"):
+                messages.success(request, f"CV đã được tải lên và phân tích: nhận diện {len(resume.parsed_data['skills'])} kỹ năng.")
+            else:
+                messages.warning(request, "CV đã được tải lên nhưng không đọc được nội dung. Hệ thống hỗ trợ phân tích PDF dạng văn bản và DOCX.")
             return redirect("candidate-profile")
     return render(request, "candidates/profile.html", {"form": form, "resume_form": resume_form, "candidate": candidate})
 

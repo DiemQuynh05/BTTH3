@@ -1,6 +1,7 @@
 from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField
 from django.shortcuts import render
 
+from applications.matching import matching_method_label
 from applications.models import Application
 from candidates.models import CandidateProfile
 
@@ -18,6 +19,7 @@ def dashboard(request):
         "total_applications": total_applications,
         "interview_rate": round(interview_count / total_applications * 100, 1) if total_applications else 0,
         "accepted_rate": round(accepted_count / total_applications * 100, 1) if total_applications else 0,
+        "matching_method": matching_method_label(),
         "average_matching": applications.filter(matching_score__isnull=False).aggregate(value=Avg("matching_score"))["value"] or 0,
         "top_skills": Skill.objects.annotate(demand=Count("job_skills")).order_by("-demand", "name")[:10],
         "salary_by_position": Job.objects.filter(salary_min__isnull=False, salary_max__isnull=False).values("title").annotate(

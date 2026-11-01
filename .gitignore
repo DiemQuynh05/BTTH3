@@ -9,3 +9,4 @@ __pycache__/
 *.db
 media/
 .server.pid
+ml_models/
