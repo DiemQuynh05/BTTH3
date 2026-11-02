@@ -20,6 +20,44 @@
     </div>
   </div>
 
+  <!-- Filter Bar (C1.5) -->
+  <div class="card p-3 mb-4 border-0 shadow-sm bg-light-subtle">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1 fw-bold"><i class="bi bi-calendar3 me-1"></i>Khoảng thời gian</label>
+        <select id="filter-days" class="form-select form-select-sm">
+          <option value="7">7 ngày qua</option>
+          <option value="30" selected>30 ngày qua (Mặc định)</option>
+          <option value="90">90 ngày qua (Quý)</option>
+          <option value="365">1 năm qua</option>
+          <option value="0">Tất cả thời gian</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1 fw-bold"><i class="bi bi-briefcase me-1"></i>Loại hình công việc</label>
+        <select id="filter-job-type" class="form-select form-select-sm">
+          <option value="">Tất cả loại hình</option>
+          <option value="FULL_TIME">Toàn thời gian</option>
+          <option value="PART_TIME">Bán thời gian</option>
+          <option value="INTERNSHIP">Thực tập</option>
+          <option value="REMOTE">Từ xa</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1 fw-bold"><i class="bi bi-building me-1"></i>Ngành nghề doanh nghiệp</label>
+        <input type="text" id="filter-industry" class="form-control form-select-sm" placeholder="Ví dụ: Công nghệ thông tin, Tài chính...">
+      </div>
+      <div class="col-md-2 d-flex align-items-end gap-1 mt-auto">
+        <button class="btn btn-primary btn-sm w-100" id="btn-apply-filter">
+          <i class="bi bi-funnel me-1"></i> Lọc
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" id="btn-reset-filter" title="Đặt lại bộ lọc">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- KPI Cards -->
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
@@ -99,8 +137,8 @@
       <div class="card p-4 h-100">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div>
-            <h2 class="h5 fw-bold mb-1">Xu hướng tuyển dụng (30 ngày)</h2>
-            <div class="text-muted small">Số lượng tin đăng mới và lượt ứng tuyển mỗi ngày</div>
+            <h2 class="h5 fw-bold mb-1">Xu hướng tuyển dụng</h2>
+            <div class="text-muted small">Số lượng tin đăng mới và lượt ứng tuyển theo mốc thời gian</div>
           </div>
         </div>
         <div class="chart-container-card" style="height: 280px;">
@@ -136,13 +174,30 @@ document.addEventListener("DOMContentLoaded", function() {
   let trendChartInstance = null;
   let salaryChartInstance = null;
 
+  function buildFilterQuery() {
+    const days = document.getElementById("filter-days")?.value || "30";
+    const jobType = document.getElementById("filter-job-type")?.value || "";
+    const industry = document.getElementById("filter-industry")?.value || "";
+
+    const params = new URLSearchParams();
+    if (days) params.set("days", days);
+    if (jobType) params.set("job_type", jobType);
+    if (industry.trim()) params.set("industry", industry.trim());
+
+    return params.toString();
+  }
+
   async function loadDashboardData() {
     const btn = document.getElementById("btn-refresh-bi");
+    const applyBtn = document.getElementById("btn-apply-filter");
     if (btn) btn.disabled = true;
+    if (applyBtn) applyBtn.disabled = true;
+
+    const queryString = buildFilterQuery();
 
     try {
       // 1. Load Summary
-      const summary = await window.AppUtils.fetchJson("{% url 'api-bi-summary' %}");
+      const summary = await window.AppUtils.fetchJson(`{% url 'api-bi-summary' %}?${queryString}`);
       if (summary?.data) {
         document.getElementById("kpi-candidates").textContent = summary.data.total_candidates;
         document.getElementById("kpi-jobs").textContent = summary.data.open_jobs;
@@ -154,35 +209,36 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       // 2. Load Skills Chart
-      const skillsRes = await window.AppUtils.fetchJson("{% url 'api-bi-skills' %}?limit=8");
+      const skillsRes = await window.AppUtils.fetchJson(`{% url 'api-bi-skills' %}?limit=8&${queryString}`);
       if (skillsRes?.data) {
         renderSkillsChart(skillsRes.data);
       }
 
       // 3. Load Funnel Chart
-      const funnelRes = await window.AppUtils.fetchJson("{% url 'api-bi-funnel' %}");
+      const funnelRes = await window.AppUtils.fetchJson(`{% url 'api-bi-funnel' %}?${queryString}`);
       if (funnelRes?.stages) {
         renderFunnelChart(funnelRes.stages);
       }
 
       // 4. Load Trend Chart
-      const trendRes = await window.AppUtils.fetchJson("{% url 'api-bi-trend' %}?days=30");
+      const trendRes = await window.AppUtils.fetchJson(`{% url 'api-bi-trend' %}?${queryString}`);
       if (trendRes?.labels) {
         renderTrendChart(trendRes);
       }
 
       // 5. Load Salary Chart
-      const salaryRes = await window.AppUtils.fetchJson("{% url 'api-bi-salary' %}?limit=7");
+      const salaryRes = await window.AppUtils.fetchJson(`{% url 'api-bi-salary' %}?limit=7&${queryString}`);
       if (salaryRes?.data) {
         renderSalaryChart(salaryRes.data);
       }
 
-      window.AppUtils.showToast("Đã cập nhật dữ liệu BI Dashboard mới nhất!");
+      window.AppUtils.showToast("Đã cập nhật dữ liệu BI Dashboard theo bộ lọc!");
     } catch (err) {
       console.error("Lỗi tải dashboard:", err);
       window.AppUtils.showToast("Không thể tải dữ liệu BI: " + err.message, "error");
     } finally {
       if (btn) btn.disabled = false;
+      if (applyBtn) applyBtn.disabled = false;
     }
   }
 
@@ -312,6 +368,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Load ban đầu
   loadDashboardData();
+
+  // Sự kiện nút lọc và đặt lại
+  document.getElementById("btn-apply-filter")?.addEventListener("click", loadDashboardData);
+  document.getElementById("filter-days")?.addEventListener("change", loadDashboardData);
+  document.getElementById("filter-job-type")?.addEventListener("change", loadDashboardData);
+
+  document.getElementById("btn-reset-filter")?.addEventListener("click", function() {
+    document.getElementById("filter-days").value = "30";
+    document.getElementById("filter-job-type").value = "";
+    document.getElementById("filter-industry").value = "";
+    loadDashboardData();
+  });
 
   // Nút reload
   document.getElementById("btn-refresh-bi")?.addEventListener("click", loadDashboardData);

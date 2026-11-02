@@ -1,6 +1,8 @@
+import functools
 import json
 import logging
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
@@ -23,6 +25,24 @@ from jobs.models import Job
 logger = logging.getLogger(__name__)
 
 
+def rate_limit(requests_per_minute=60):
+    """Decorator giới hạn tần suất gọi API (B1.3)."""
+    def decorator(view_func):
+        @functools.wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            ident = str(request.user.id) if request.user.is_authenticated else (
+                request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR", "unknown")
+            )
+            key = f"ratelimit_{view_func.__name__}_{ident}"
+            count = cache.get(key, 0)
+            if count >= requests_per_minute:
+                return JsonResponse({"error": "Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút."}, status=429)
+            cache.set(key, count + 1, 60)
+            return view_func(request, *args, **kwargs)
+        return _wrapped
+    return decorator
+
+
 def _enrich_explanation(explanation, candidate, job):
     """Bổ sung matched_skills và missing_required_skills nếu explanation chưa có (ví dụ rule-based)."""
     exp = dict(explanation or {})
@@ -35,6 +55,7 @@ def _enrich_explanation(explanation, candidate, job):
     return exp
 
 
+@rate_limit(requests_per_minute=60)
 @require_http_methods(["GET", "POST"])
 def match_preview(request):
     """Tính toán Matching Score cho ứng viên hiện tại hoặc theo tham số."""
@@ -75,6 +96,7 @@ def match_preview(request):
     })
 
 
+@rate_limit(requests_per_minute=30)
 @require_http_methods(["POST"])
 def cv_parse(request):
     """Trích xuất kỹ năng, kinh nghiệm và học vấn từ file CV (PDF/DOCX) hoặc text."""
@@ -113,6 +135,7 @@ def cv_parse(request):
     })
 
 
+@rate_limit(requests_per_minute=20)
 @require_http_methods(["POST"])
 def rescore_job(request, job_id):
     """Tính lại Matching Score cho toàn bộ ứng viên của một tin tuyển dụng."""

@@ -195,3 +195,60 @@ class ApiAiBiTests(TestCase):
 
         self.application.refresh_from_db()
         self.assertEqual(self.application.status, "INTERVIEW")
+
+
+    def test_bi_summary_with_filters_and_cache(self):
+        url = reverse("api-bi-summary")
+        # Gọi lần 1 với query params
+        res1 = self.client.get(f"{url}?days=30&job_type=FULL_TIME")
+        self.assertEqual(res1.status_code, 200)
+        data1 = res1.json()
+        self.assertEqual(data1["status"], "success")
+
+        # Gọi lần 2 lấy từ cache
+        res2 = self.client.get(f"{url}?days=30&job_type=FULL_TIME")
+        self.assertEqual(res2.status_code, 200)
+        self.assertEqual(res2.json(), data1)
+
+    def test_job_list_filter_by_skill(self):
+        url = reverse("job-list")
+        res = self.client.get(f"{url}?skill=Python")
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Python Developer")
+
+        res_none = self.client.get(f"{url}?skill=NonExistentSkill")
+        self.assertEqual(res_none.status_code, 200)
+        self.assertContains(res_none, "Không tìm thấy việc làm")
+
+    def test_bi_export_api(self):
+        url = reverse("api-bi-export")
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("summary", data)
+        self.assertIn("skills", data)
+        self.assertIn("funnel", data)
+
+    def test_candidate_full_application_flow(self):
+        new_cand_user = User.objects.create_user(
+            username="flow_user", email="flow@test.com", password="Pass123!Flow", role=User.Role.CANDIDATE
+        )
+        CandidateProfile.objects.create(user=new_cand_user, major="Khoa học máy tính", experience_years=2.0)
+        self.client.force_login(new_cand_user)
+
+        res_home = self.client.get(reverse("home"))
+        self.assertEqual(res_home.status_code, 200)
+
+        res_detail = self.client.get(reverse("job-detail", args=[self.job.pk]))
+        self.assertEqual(res_detail.status_code, 200)
+
+        res_apply = self.client.post(reverse("application-apply", args=[self.job.pk]), {
+            "cover_letter": "Tôi rất quan tâm đến vị trí Python Developer này.",
+        })
+        self.assertEqual(res_apply.status_code, 302)
+
+        res_list = self.client.get(reverse("application-list"))
+        self.assertEqual(res_list.status_code, 200)
+        self.assertContains(res_list, "Python Developer")
+        self.assertContains(res_list, "timeline-stepper")

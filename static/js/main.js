@@ -87,3 +87,27 @@ window.AppUtils = {
     return data;
   }
 };
+
+
+// Theme Manager (A5.3)
+function initTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+  const icon = document.getElementById("theme-icon");
+  if (icon) {
+    icon.className = currentTheme === "dark" ? "bi bi-sun-fill text-warning" : "bi bi-moon-stars text-secondary";
+  }
+
+  const toggleBtn = document.getElementById("theme-toggle");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      const activeTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+      const newTheme = activeTheme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-bs-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+      if (icon) {
+        icon.className = newTheme === "dark" ? "bi bi-sun-fill text-warning" : "bi bi-moon-stars text-secondary";
+      }
+    });
+  }
+}
+document.addEventListener("DOMContentLoaded", initTheme);
