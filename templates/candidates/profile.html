@@ -1,3 +1,251 @@
 {% extends "base.html" %}
-{% block title %}Hồ sơ ứng viên{% endblock %}
-{% block content %}<div class="container py-5"><div class="page-header pt-0"><div class="section-label">Không gian cá nhân</div><h1 class="section-title mt-2">Hồ sơ ứng viên</h1><p class="text-muted">Một hồ sơ đầy đủ giúp bạn nổi bật hơn với nhà tuyển dụng.</p></div><div class="row g-4"><div class="col-lg-8"><div class="card p-4 p-lg-5"><form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}<h2 class="h5 fw-bold mb-4"><i class="bi bi-person-circle text-primary me-2"></i>Thông tin cá nhân</h2>{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="row g-3">{% for field in form %}<div class="{% if field.name == 'bio' or field.name == 'education' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><button name="profile_submit" class="btn btn-primary mt-4 px-4">Lưu thay đổi</button></form></div></div><div class="col-lg-4"><div class="card p-4"><h2 class="h5 fw-bold"><i class="bi bi-file-earmark-text text-primary me-2"></i>CV của tôi</h2><p class="small text-muted">Tải lên CV PDF, DOC hoặc DOCX. Hệ thống tự động phân tích kỹ năng, kinh nghiệm và học vấn từ CV PDF/DOCX.</p>{% for resume in candidate.resumes.all %}<div class="d-flex align-items-center gap-2 border rounded-3 p-2 mb-2"><i class="bi bi-file-earmark-pdf text-danger fs-4"></i><a class="small text-truncate flex-grow-1" href="{{ resume.file.url }}">{{ resume.original_filename }}</a><form method="post" action="{% url 'resume-delete' resume.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" aria-label="Xóa CV"><i class="bi bi-trash"></i></button></form></div>{% with parsed=resume.parsed_data %}{% if parsed.skills or parsed.experience_years or parsed.education_level %}<div class="mb-3 px-1">{% if parsed.skills %}<div class="d-flex flex-wrap gap-1">{% for skill in parsed.skills %}<span class="skill-badge">{{ skill }}</span>{% endfor %}</div>{% endif %}<div class="small text-muted mt-1">{% if parsed.experience_years %}{{ parsed.experience_years }} năm kinh nghiệm · {% endif %}{{ parsed.education_label }}</div></div>{% endif %}{% endwith %}{% empty %}<div class="empty-state p-3 mb-3"><i class="bi bi-upload"></i><p class="small mb-0 mt-1">Chưa có CV</p></div>{% endfor %}<form method="post" enctype="multipart/form-data">{% csrf_token %}{{ resume_form.as_p }}<button name="resume_submit" class="btn btn-outline-primary w-100">Tải CV mới</button></form></div><div class="card p-4 mt-4 bg-primary text-white border-0"><i class="bi bi-lightbulb fs-3"></i><h3 class="h6 mt-3">Mẹo hồ sơ</h3><p class="small text-white-50 mb-0">Bổ sung kỹ năng và dự án để tăng độ phù hợp khi ứng tuyển.</p></div></div></div></div>{% endblock %}
+{% block title %}Hồ sơ cá nhân & CV · Smart Recruitment{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header pt-0 mb-4">
+    <div class="section-label">Không gian cá nhân</div>
+    <h1 class="section-title mt-2">Hồ sơ ứng viên</h1>
+    <p class="text-muted mb-0">Hoàn thiện thông tin cá nhân và tải lên CV để thuật toán AI Matching đề xuất việc làm chính xác nhất.</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Form thông tin cá nhân -->
+    <div class="col-lg-7">
+      <div class="card p-4 p-lg-5">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+            <h2 class="h5 fw-bold mb-0 text-dark">
+              <i class="bi bi-person-circle text-primary me-2"></i>Thông tin nghề nghiệp
+            </h2>
+            <span class="badge text-bg-light border text-muted">Bắt buộc</span>
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            {% for field in form %}
+              <div class="{% if field.name == 'bio' or field.name == 'education' %}col-12{% else %}col-md-6{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+            <button name="profile_submit" class="btn btn-primary px-4 shadow-sm">
+              <i class="bi bi-check2 me-1"></i> Lưu thông tin cá nhân
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- CV & AI Parsing Area -->
+    <div class="col-lg-5">
+      <!-- CV Upload & Parser Card -->
+      <div class="card p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold mb-0">
+            <i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>Tải lên & Phân tích CV
+          </h2>
+          <span class="badge text-bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.75rem;">
+            <i class="bi bi-stars me-1"></i>AI Parser
+          </span>
+        </div>
+
+        <p class="small text-muted mb-3">
+          Hỗ trợ định dạng <strong>PDF</strong> hoặc <strong>DOCX</strong>. Thuật toán sẽ tự động trích xuất kỹ năng, số năm kinh nghiệm và học vấn.
+        </p>
+
+        <!-- Dropzone Box -->
+        <div class="cv-dropzone mb-3" id="cv-dropzone">
+          <input type="file" id="cv-file-input" accept=".pdf,.docx,.doc" class="d-none">
+          <div class="cv-dropzone-icon">
+            <i class="bi bi-cloud-arrow-up"></i>
+          </div>
+          <div class="fw-semibold text-dark mb-1">Kéo thả file CV vào đây hoặc <span class="text-primary text-decoration-underline">chọn từ máy tính</span></div>
+          <div class="text-muted small">Dung lượng tối đa 10MB (PDF, DOCX)</div>
+        </div>
+
+        <!-- AI Parsing Live Preview Box -->
+        <div id="ai-parse-preview" class="border rounded-3 p-3 bg-light-subtle d-none mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <strong class="small text-primary"><i class="bi bi-cpu me-1"></i>Kết quả phân tích tức thì:</strong>
+            <span class="spinner-border spinner-border-sm text-primary d-none" id="parse-spinner"></span>
+          </div>
+          <div id="parse-result-body">
+            <div class="small text-muted mb-1">File: <span class="fw-semibold text-dark" id="parse-filename">—</span></div>
+            <div class="small text-muted mb-1">Học vấn: <span class="fw-semibold text-dark" id="parse-edu">—</span></div>
+            <div class="small text-muted mb-2">Kinh nghiệm: <span class="fw-semibold text-dark" id="parse-exp">—</span></div>
+            <div class="small text-muted mb-1">Kỹ năng phát hiện:</div>
+            <div class="d-flex flex-wrap gap-1" id="parse-skills-container"></div>
+          </div>
+        </div>
+
+        <!-- Form lưu CV chính thức -->
+        <form method="post" enctype="multipart/form-data" id="official-resume-form">
+          {% csrf_token %}
+          <div class="mb-3 d-none">
+            {{ resume_form.file }}
+          </div>
+          <button name="resume_submit" id="btn-save-resume" class="btn btn-outline-primary w-100" disabled>
+            <i class="bi bi-upload me-1"></i> Xác nhận lưu CV này vào hồ sơ
+          </button>
+        </form>
+      </div>
+
+      <!-- Danh sách CV đã lưu -->
+      <div class="card p-4">
+        <h2 class="h6 fw-bold mb-3 text-uppercase text-muted" style="font-size:0.8rem; letter-spacing:0.05em;">
+          <i class="bi bi-files me-1"></i>CV hiện có trong hồ sơ
+        </h2>
+
+        {% for resume in candidate.resumes.all %}
+          <div class="border rounded-3 p-3 mb-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="d-flex align-items-center gap-2 text-truncate">
+                <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
+                <a class="fw-semibold text-dark text-truncate text-decoration-none" href="{{ resume.file.url }}" target="_blank">
+                  {{ resume.original_filename|default:"CV Ứng viên" }}
+                </a>
+              </div>
+              <form method="post" action="{% url 'resume-delete' resume.pk %}" onsubmit="return confirm('Bạn có chắc muốn xóa CV này?');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Xóa CV">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+
+            {% with parsed=resume.parsed_data %}
+              {% if parsed.skills or parsed.experience_years or parsed.education_level %}
+                <div class="pt-2 border-top">
+                  {% if parsed.skills %}
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                      {% for skill in parsed.skills %}
+                        <span class="skill-badge text-bg-light border text-primary" style="font-size:0.75rem;">{{ skill }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                  <div class="small text-muted d-flex align-items-center gap-2">
+                    {% if parsed.experience_years %}
+                      <span><i class="bi bi-briefcase me-1"></i>{{ parsed.experience_years }} năm kinh nghiệm</span>
+                    {% endif %}
+                    {% if parsed.education_label %}
+                      <span><i class="bi bi-mortarboard me-1"></i>{{ parsed.education_label }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% empty %}
+          <div class="empty-state p-3 text-center">
+            <i class="bi bi-cloud-upload fs-3 text-muted d-block mb-1"></i>
+            <p class="small text-muted mb-0">Bạn chưa tải lên bản CV nào.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const dropzone = document.getElementById("cv-dropzone");
+  const fileInput = document.getElementById("cv-file-input");
+  const previewBox = document.getElementById("ai-parse-preview");
+  const parseSpinner = document.getElementById("parse-spinner");
+  const parseFilename = document.getElementById("parse-filename");
+  const parseEdu = document.getElementById("parse-edu");
+  const parseExp = document.getElementById("parse-exp");
+  const parseSkills = document.getElementById("parse-skills-container");
+  const btnSaveResume = document.getElementById("btn-save-resume");
+  const realFileInput = document.querySelector("#official-resume-form input[type='file']");
+
+  dropzone?.addEventListener("click", () => fileInput?.click());
+
+  dropzone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("dragover");
+  });
+
+  dropzone?.addEventListener("dragleave", () => {
+    dropzone.classList.remove("dragover");
+  });
+
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("dragover");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileSelected(e.target.files[0]);
+    }
+  });
+
+  async function handleFileSelected(file) {
+    if (!file) return;
+
+    // Đồng bộ sang real form để submit
+    if (realFileInput) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      realFileInput.files = dataTransfer.files;
+    }
+
+    btnSaveResume.disabled = false;
+    previewBox.classList.remove("d-none");
+    parseSpinner.classList.remove("d-none");
+    parseFilename.textContent = file.name;
+    parseEdu.textContent = "Đang phân tích...";
+    parseExp.textContent = "Đang phân tích...";
+    parseSkills.innerHTML = "";
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await window.AppUtils.fetchJson("{% url 'api-cv-parse' %}", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res?.status === "success" && res.extracted) {
+        const ext = res.extracted;
+        parseEdu.textContent = ext.education_label || "Không xác định";
+        parseExp.textContent = `${ext.experience_years} năm`;
+
+        if (ext.skills && ext.skills.length > 0) {
+          parseSkills.innerHTML = ext.skills.map(s => 
+            `<span class="skill-badge text-bg-primary-subtle text-primary border border-primary-subtle">${s}</span>`
+          ).join(" ");
+        } else {
+          parseSkills.innerHTML = '<span class="text-muted small">Không tìm thấy từ khóa kỹ năng quen thuộc trong từ điển.</span>';
+        }
+        window.AppUtils.showToast("Bóc tách thông tin CV thành công!");
+      }
+    } catch (err) {
+      window.AppUtils.showToast("Lỗi phân tích CV: " + err.message, "error");
+      parseEdu.textContent = "Không đọc được";
+      parseExp.textContent = "Không đọc được";
+    } finally {
+      parseSpinner.classList.add("d-none");
+    }
+  }
+});
+</script>
+{% endblock %}

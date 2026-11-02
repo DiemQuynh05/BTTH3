@@ -13,13 +13,13 @@ from .models import Job, Skill
 
 
 def home(request):
-    featured = Job.objects.filter(status=Job.Status.OPEN).select_related("employer").order_by("-created_at")[:6]
+    featured = Job.objects.filter(status=Job.Status.OPEN).select_related("employer").prefetch_related("skills").order_by("-created_at")[:6]
     categories = Skill.objects.values("category").exclude(category="").distinct()[:8]
     return render(request, "jobs/home.html", {"featured_jobs": featured, "categories": categories})
 
 
 def job_list(request):
-    qs = Job.objects.filter(status=Job.Status.OPEN).select_related("employer").order_by("-created_at")
+    qs = Job.objects.filter(status=Job.Status.OPEN).select_related("employer").prefetch_related("skills").order_by("-created_at")
     keyword = request.GET.get("q", "").strip()
     location = request.GET.get("location", "").strip()
     job_type = request.GET.get("job_type", "").strip()
@@ -34,13 +34,14 @@ def job_list(request):
 
 
 def job_detail(request, pk):
-    job = get_object_or_404(Job.objects.select_related("employer").prefetch_related("skills"), pk=pk)
+    job = get_object_or_404(Job.objects.select_related("employer").prefetch_related("skills", "job_skills__skill"), pk=pk)
     applied = request.user.is_authenticated and Application.objects.filter(job=job, candidate__user=request.user).exists()
     match = None
     candidate = getattr(request.user, "candidate_profile", None) if request.user.is_authenticated else None
     if candidate is not None:
         score, explanation = calculate_matching_score(candidate, job)
-        match = {"score": score, "explanation": explanation}
+        from api.views_ai import _enrich_explanation
+        match = {"score": score, "explanation": _enrich_explanation(explanation, candidate, job)}
     return render(request, "jobs/detail.html", {"job": job, "applied": applied, "application_form": ApplicationForm(), "match": match})
 
 

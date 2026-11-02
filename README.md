@@ -93,20 +93,33 @@ python manage.py shell -c "from accounts.models import User; from candidates.mod
 
 - `/`: Trang chủ và tìm kiếm nhanh
 - `/jobs/`: tìm kiếm, lọc và phân trang
-- `/dashboard/`: BI Dashboard tổng hợp trực tiếp từ database
+- `/dashboard/`: BI Dashboard trực quan hóa với Chart.js (cung-cầu kỹ năng, phễu tuyển dụng, xu hướng và phân bố lương)
 - `/accounts/register/`, `/accounts/login/`: xác thực
-- `/candidates/profile/`: hồ sơ, CV ứng viên
+- `/candidates/profile/`: hồ sơ, tải lên và phân tích CV tự động (drag & drop)
 - `/employers/profile/`, `/employers/jobs/`: hồ sơ và quản lý tin
-- `/employers/jobs/<id>/applicants/`: xếp hạng ứng viên theo điểm AI Matching
+- `/employers/jobs/<id>/applicants/`: xếp hạng ứng viên theo AI Matching, tính lại điểm và cập nhật trạng thái không cần reload trang
 - `/applications/`: danh sách hồ sơ đã ứng tuyển
 - `/admin/`: quản trị dữ liệu
+
+## Hệ thống API mới (Checklist 4)
+
+Chi tiết đặc tả: [docs/api-bi-ai.md](docs/api-bi-ai.md).
+
+- `GET/POST /api/match/preview/`: Tính điểm và giải thích Matching Score giữa ứng viên và việc làm.
+- `POST /api/match/rescore/<id>/`: Tính lại điểm tương thích cho toàn bộ ứng viên của tin tuyển dụng.
+- `POST /api/cv/parse/`: Tự động trích xuất kỹ năng, số năm kinh nghiệm, học vấn từ CV.
+- `POST /api/applications/<id>/status/`: Cập nhật trạng thái ứng viên theo thời gian thực.
+- `GET /api/bi/summary/`: Thống kê các chỉ số KPI tuyển dụng.
+- `GET /api/bi/skills/`: Thống kê Top kỹ năng Cung - Cầu thị trường.
+- `GET /api/bi/salary/`: Thống kê phân bố lương trung bình theo chức danh.
+- `GET /api/bi/funnel/`: Tỷ lệ chuyển đổi qua các vòng trong phễu tuyển dụng.
+- `GET /api/bi/trend/`: Xu hướng đăng tin và nộp hồ sơ theo thời gian.
 
 ## Kiểm thử
 
 ```powershell
 python manage.py check
 python manage.py test
-pytest
 ```
 
 `seed_demo_data` tạo thêm 100 ứng viên, 20 nhà tuyển dụng, 50 tin tuyển dụng,
