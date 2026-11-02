@@ -7,4 +7,6 @@ __pycache__/
 .env
 *.sqlite3
 *.db
-
+media/
+.server.pid
+ml_models/

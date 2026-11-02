@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} · {{ job.employer.company_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+      <div class="card p-4 h-100 detail-content shadow-sm border">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div>
+            <div class="section-label mb-1">{{ job.employer.company_name }}</div>
+            <h1 class="h3 fw-bold text-dark mb-2">{{ job.title }}</h1>
+            <div class="d-flex flex-wrap gap-2 text-muted small align-items-center">
+              <span><i class="bi bi-geo-alt me-1 text-primary"></i>{{ job.location }}</span>
+              <span>•</span>
+              <span><i class="bi bi-briefcase me-1 text-primary"></i>{{ job.get_job_type_display }}</span>
+              <span>•</span>
+              <span><i class="bi bi-building me-1 text-primary"></i>{{ job.get_work_mode_display }}</span>
+              <span>•</span>
+              <span><i class="bi bi-clock me-1 text-primary"></i>Đăng {{ job.created_at|timesince }} trước</span>
+            </div>
+          </div>
+          {% if job.status == 'OPEN' %}
+            <span class="badge text-bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">Đang tuyển</span>
+          {% else %}
+            <span class="badge text-bg-secondary px-3 py-2 rounded-pill">Đã đóng</span>
+          {% endif %}
+        </div>
+
+        <!-- Skills Tags -->
+        <div class="d-flex flex-wrap gap-1 mb-4">
+          {% for js in job.job_skills.all %}
+            <span class="badge bg-light text-dark border">
+              {{ js.skill.name }}{% if js.is_required %} <span class="text-danger">*</span>{% endif %}
+            </span>
+          {% empty %}
+            {% for skill in job.skills.all %}
+              <span class="badge bg-light text-dark border">{{ skill.name }}</span>
+            {% endfor %}
+          {% endfor %}
+        </div>
+
+        <hr class="border-light-subtle my-4">
+
+        <section class="mb-4">
+          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-file-text me-2 text-primary"></i>Mô tả công việc</h2>
+          <p class="text-preline text-secondary leading-relaxed">{{ job.description }}</p>
+        </section>
+
+        {% if job.responsibilities %}
+        <section class="mb-4">
+          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Trách nhiệm chính</h2>
+          <p class="text-preline text-secondary leading-relaxed">{{ job.responsibilities }}</p>
+        </section>
+        {% endif %}
+
+        <section class="mb-4">
+          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-person-check me-2 text-primary"></i>Yêu cầu ứng viên</h2>
+          <p class="text-preline text-secondary leading-relaxed">{{ job.requirements }}</p>
+        </section>
+
+        <!-- Section thông tin công ty (A2.4) -->
+        <section class="mt-4 pt-4 border-top">
+          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-building me-2 text-primary"></i>Về công ty {{ job.employer.company_name }}</h2>
+          <div class="card bg-light-subtle border-0 p-3 rounded-3">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              {% if job.employer.logo %}
+                <img src="{{ job.employer.logo.url }}" alt="{{ job.employer.company_name }}" class="rounded border" style="width: 56px; height: 56px; object-fit: cover;">
+              {% else %}
+                <div class="rounded bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 56px; height: 56px;">
+                  {{ job.employer.company_name|first|upper }}
+                </div>
+              {% endif %}
+              <div>
+                <h3 class="h6 fw-bold mb-1">{{ job.employer.company_name }}</h3>
+                {% if job.employer.industry %}
+                  <span class="badge text-bg-light border text-muted"><i class="bi bi-tag me-1"></i>{{ job.employer.industry }}</span>
+                {% endif %}
+                {% if job.employer.address %}
+                  <div class="small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>{{ job.employer.address }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% if job.employer.description %}
+              <p class="text-secondary small mb-2 text-preline">{{ job.employer.description }}</p>
+            {% endif %}
+            {% if job.employer.website %}
+              <div class="pt-2 border-top small">
+                <a href="{{ job.employer.website }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                  <i class="bi bi-globe me-1"></i>{{ job.employer.website }} <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.75rem;"></i>
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Sidebar Panel -->
+    <div class="col-lg-4">
+      <div class="card p-4 detail-panel shadow-sm border">
+        <h2 class="h6 text-uppercase text-muted fw-bold mb-3">Thông tin vị trí</h2>
+
+        <div class="d-flex gap-3 mb-3">
+          <i class="bi bi-cash-stack text-primary fs-5"></i>
+          <div>
+            <small class="text-muted d-block">Mức lương</small>
+            <strong class="text-primary">
+              {% if job.salary_min and job.salary_max %}
+                {{ job.salary_min|floatformat:0 }} – {{ job.salary_max|floatformat:0 }} VNĐ
+              {% else %}
+                Thỏa thuận
+              {% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mb-3">
+          <i class="bi bi-mortarboard text-primary fs-5"></i>
+          <div>
+            <small class="text-muted d-block">Kinh nghiệm</small>
+            <strong>{{ job.get_experience_level_display }}</strong>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mb-3">
+          <i class="bi bi-calendar-event text-primary fs-5"></i>
+          <div>
+            <small class="text-muted d-block">Hạn nộp hồ sơ</small>
+            <strong>{{ job.deadline|default:"Tuyển liên tục" }}</strong>
+          </div>
+        </div>
+
+        <!-- AI Matching Preview Box -->
+        {% if match %}
+          <div class="border rounded-3 p-3 mt-3 bg-light-subtle">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <small class="text-muted fw-bold text-uppercase" style="font-size:0.75rem;">
+                <i class="bi bi-stars text-primary me-1"></i>Độ phù hợp với hồ sơ của bạn
+              </small>
+              {% if match.explanation.method == "ml" %}
+                <span class="badge text-bg-primary" style="font-size:0.65rem;">Mô hình ML</span>
+              {% else %}
+                <span class="badge text-bg-secondary" style="font-size:0.65rem;">Rule-based</span>
+              {% endif %}
+            </div>
+
+            <div class="d-flex align-items-baseline gap-2 mb-1">
+              <strong class="fs-2 {% if match.score >= 70 %}text-success{% elif match.score >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                {{ match.score|floatformat:0 }}
+              </strong>
+              <span class="text-muted">/100 điểm</span>
+            </div>
+
+            <div class="progress mb-2" style="height:8px">
+              <div class="progress-bar {% if match.score >= 70 %}bg-success{% elif match.score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" style="width:{{ match.score|floatformat:0 }}%"></div>
+            </div>
+
+            <!-- Matched & Missing Skills -->
+            {% if match.explanation.matched_skills %}
+              <div class="small mb-1">
+                <span class="text-success fw-medium"><i class="bi bi-check2-circle me-1"></i>Đã đáp ứng:</span>
+                <span class="text-dark">{{ match.explanation.matched_skills|join:", " }}</span>
+              </div>
+            {% endif %}
+
+            {% if match.explanation.missing_required_skills %}
+              <div class="small mb-2">
+                <span class="text-danger fw-medium"><i class="bi bi-exclamation-triangle me-1"></i>Cần bổ sung:</span>
+                <span class="text-danger">{{ match.explanation.missing_required_skills|join:", " }}</span>
+              </div>
+            {% endif %}
+
+            <!-- Top Factors -->
+            {% if match.explanation.top_factors %}
+              <div class="mt-2 pt-2 border-top">
+                <small class="text-muted d-block mb-1 fw-bold" style="font-size:0.75rem;">Yếu tố đánh giá chính:</small>
+                {% for factor in match.explanation.top_factors|slice:":2" %}
+                  <div class="small d-flex align-items-center gap-1 text-muted">
+                    <i class="bi {% if factor.impact >= 0 %}bi-arrow-up-short text-success{% else %}bi-arrow-down-short text-danger{% endif %} fs-6"></i>
+                    <span>{{ factor.label }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <hr class="my-4">
+
+        <div class="d-grid gap-2">
+          {% if applied %}
+            <div class="alert alert-success mb-0 text-center py-2">
+              <i class="bi bi-check-circle-fill me-1"></i>Bạn đã nộp đơn ứng tuyển cho tin này.
+            </div>
+          {% elif user.is_authenticated %}
+            {% if user.role == 'EMPLOYER' %}
+              {% if job.employer.user == user %}
+                <a href="{% url 'employer-job-applicants' job.pk %}" class="btn btn-primary btn-lg shadow-sm">
+                  <i class="bi bi-people me-1"></i> Quản lý & Xếp hạng ứng viên
+                </a>
+              {% else %}
+                <div class="alert alert-info mb-0 text-center py-2 small">
+                  <i class="bi bi-info-circle me-1"></i>Bạn đang đăng nhập bằng tài khoản <strong>Nhà tuyển dụng</strong>. Để nộp đơn ứng tuyển, vui lòng đăng nhập bằng tài khoản Ứng viên.
+                </div>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'application-apply' job.pk %}" class="btn btn-primary btn-lg shadow-sm">
+                Ứng tuyển ngay <i class="bi bi-arrow-right ms-1"></i>
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-lg shadow-sm">
+              Đăng nhập để ứng tuyển
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="small text-muted text-center mt-3">
+          <i class="bi bi-shield-check me-1 text-success"></i>Hồ sơ được mã hóa và bảo mật an toàn
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

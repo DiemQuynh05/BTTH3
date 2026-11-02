@@ -1,103 +1,146 @@
-# He_Thong_Tim_Viec
+# Smart Recruitment
 
-Nền tảng tìm việc thông minh tích hợp AI và BI.
+Ứng dụng Django tìm việc thông minh dành cho sinh viên và người mới đi làm.
+Bản triển khai hiện tại dùng Django Templates, Bootstrap 5, SQLite và Django
+ORM; có thể chuyển sang PostgreSQL bằng `DATABASE_URL`.
 
-## Trạng thái checklist TV1
-
-| STT | Nội dung | Trạng thái |
-|---|---|---|
-| 1 | Tạo CSDL và bảng nghiệp vụ | Hoàn thành: SQLite và bộ schema PostgreSQL |
-| 2 | Khóa chính, khóa ngoại, quan hệ | Hoàn thành |
-| 3 | Dữ liệu mẫu ứng viên, CV, việc, kỹ năng, hồ sơ | Hoàn thành trong `postgresql/002_seed.sql` |
-| 4 | Làm sạch và kiểm tra dữ liệu | Hoàn thành trong `postgresql/004_data_quality.sql` |
-| 5 | View/truy vấn phục vụ AI | Hoàn thành: `ai_candidate_job_skill_match` |
-| 6 | View/truy vấn phục vụ BI | Hoàn thành: `bi_application_kpi_daily`, `bi_job_funnel` |
-| 7 | Kiểm thử và đối chiếu | Có checklist truy vấn; cần chạy trên PostgreSQL thật để chốt biên bản |
-
-Mô hình ORM và SQLite vẫn được giữ để chạy backend hiện tại. Bộ SQL PostgreSQL là
-đường triển khai đầy đủ cho TV1.
-
-## Yêu cầu môi trường
-
-- Python 3.11 trở lên
-- `venv`
-
-## Khởi tạo và chạy backend
-
-PowerShell:
+## Chạy nhanh
 
 ```powershell
-cd C:\Hoctap\HTKDTM\BTTH3\He_Thong_Tim_Viec
-py -3.11 -m venv .venv
+cd C:\Hoctap\HTKDTM\BTTH3\SmartRecruitment
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-uvicorn app.main:app --reload
+python manage.py migrate
+python manage.py seed_data
+python manage.py seed_demo_data
+python manage.py train_matching_model
+python manage.py rescore_applications
+python manage.py createsuperuser
+python manage.py runserver
 ```
 
-Mở tài liệu API tại <http://127.0.0.1:8000/docs>.
+## PostgreSQL local
 
-## Khởi tạo PostgreSQL
-
-Tạo database trước (ví dụ `he_thong_tim_viec`), sau đó chạy theo đúng thứ tự:
+PostgreSQL 18 local của môi trường này chạy ở cổng `5433`, database của
+Smart Recruitment là `smart_recruitment`. Cấu hình `DATABASE_URL` đã được lưu
+ở cấp user Windows:
 
 ```powershell
-psql -h localhost -p 5433 -U postgres -d he_thong_tim_viec -f postgresql/001_schema.sql
-psql -h localhost -p 5433 -U postgres -d he_thong_tim_viec -f postgresql/002_seed.sql
-psql -h localhost -p 5433 -U postgres -d he_thong_tim_viec -f postgresql/003_views.sql
-psql -h localhost -p 5433 -U postgres -d he_thong_tim_viec -f postgresql/004_data_quality.sql
+$env:DATABASE_URL="postgresql://postgres@127.0.0.1:5433/smart_recruitment"
 ```
 
-`004_data_quality.sql` phải trả về 0 dòng ở các truy vấn lỗi; truy vấn cuối
-dùng để đối chiếu số lượng bản ghi. Để backend dùng PostgreSQL, đặt
-`DATABASE_URL=postgresql+psycopg://...` trong `.env`.
-
-## Sinh dữ liệu giả
-
-Script dùng dữ liệu tạo tự động, không chứa thông tin người thật. Mặc định tạo
-100 ứng viên, 20 nhà tuyển dụng, 50 công việc và 300 hồ sơ ứng tuyển:
+Nếu mở một terminal mới, chỉ cần kích hoạt lại virtual environment rồi chạy:
 
 ```powershell
-$env:DATABASE_URL = "postgresql://postgres@localhost:5433/he_thong_tim_viec"
-python scripts/generate_demo_data.py
+cd C:\Hoctap\HTKDTM\BTTH3\SmartRecruitment
+.\.venv\Scripts\Activate.ps1
+python manage.py check
+python manage.py runserver
 ```
 
-Có thể điều chỉnh quy mô và dùng prefix riêng để chạy nhiều lần:
+Để kiểm tra Django đang dùng PostgreSQL:
 
 ```powershell
-python scripts/generate_demo_data.py --applicants 1000 --employers 100 --jobs 500 --applications 5000 --prefix loadtest
+python manage.py shell -c "from django.conf import settings; print(settings.DATABASES['default']['ENGINE']); print(settings.DATABASES['default']['NAME'])"
 ```
 
-Script chỉ thêm bản ghi mới, không xóa dữ liệu hiện có. Mật khẩu trong các
-user sinh ra là giá trị giả (`demo-only-hash`), không dùng cho đăng nhập thật.
+Kết quả mong đợi:
+
+```text
+django.db.backends.postgresql
+smart_recruitment
+```
+
+Nếu triển khai trên máy khác, thay URL bằng username, mật khẩu, host và port
+PostgreSQL tương ứng. Không commit mật khẩu thật vào repository.
+
+Mở `http://127.0.0.1:8000/`. Tài khoản được tạo bởi `seed_data` chỉ là dữ liệu
+minh họa và được đặt mật khẩu không sử dụng được; hãy đăng ký tài khoản mới
+hoặc tạo superuser để kiểm thử.
+
+`seed_data` tạo dữ liệu mẫu tiếng Việt gồm 3 nhà tuyển dụng, 15 ứng viên, 30
+tin tuyển dụng, 20 kỹ năng, CV PDF mẫu và 20 hồ sơ ứng tuyển. Lệnh có thể chạy
+lặp lại; dữ liệu mẫu được nhận diện bằng username/email và khóa nghiệp vụ, nên
+không nhân đôi bản ghi hoặc xóa dữ liệu hiện có.
+
+## Tài khoản demo phát triển
+
+Các thông tin dưới đây chỉ dùng cho môi trường local/demo, không sử dụng trong
+production:
+
+| Vai trò | Username | Email | Mật khẩu | Trang đăng nhập |
+|---|---|---|---|---|
+| Quản trị viên | `demo_admin` | `demo_admin@local.test` | `DemoAdmin123!` | `/admin/` |
+| Ứng viên | `demo_candidate` | `demo_candidate@local.test` | `DemoCandidate123!` | `/accounts/login/` |
+| Nhà tuyển dụng | `demo_employer` | `demo_employer@local.test` | `DemoEmployer123!` | `/accounts/login/` |
+
+Để tạo ba tài khoản demo sau khi chạy migration, sử dụng PowerShell:
+
+```powershell
+python manage.py shell -c "from accounts.models import User; admin,_=User.objects.get_or_create(username='demo_admin', defaults={'email':'demo_admin@local.test','role':User.Role.ADMIN,'is_staff':True,'is_superuser':True}); admin.role=User.Role.ADMIN; admin.is_staff=True; admin.is_superuser=True; admin.email='demo_admin@local.test'; admin.set_password('DemoAdmin123!'); admin.save(); candidate,_=User.objects.get_or_create(username='demo_candidate', defaults={'email':'demo_candidate@local.test','role':User.Role.CANDIDATE}); candidate.role=User.Role.CANDIDATE; candidate.email='demo_candidate@local.test'; candidate.set_password('DemoCandidate123!'); candidate.save(); employer,_=User.objects.get_or_create(username='demo_employer', defaults={'email':'demo_employer@local.test','role':User.Role.EMPLOYER}); employer.role=User.Role.EMPLOYER; employer.email='demo_employer@local.test'; employer.set_password('DemoEmployer123!'); employer.save(); print('Demo accounts created or updated')"
+```
+
+Tài khoản ứng viên và nhà tuyển dụng có thể đăng nhập qua giao diện. Hồ sơ
+tương ứng sẽ được tạo tự động khi đăng ký qua `/accounts/register/`; nếu tạo
+trực tiếp bằng lệnh trên, có thể tạo profile từ Django shell:
+
+```powershell
+python manage.py shell -c "from accounts.models import User; from candidates.models import CandidateProfile; from employers.models import EmployerProfile; c=User.objects.get(username='demo_candidate'); CandidateProfile.objects.get_or_create(user=c); e=User.objects.get(username='demo_employer'); EmployerProfile.objects.get_or_create(user=e, defaults={'company_name':'Demo Recruitment Company'})"
+```
+
+## URL chính
+
+- `/`: Trang chủ và tìm kiếm nhanh
+- `/jobs/`: tìm kiếm, lọc và phân trang
+- `/dashboard/`: BI Dashboard trực quan hóa với Chart.js (cung-cầu kỹ năng, phễu tuyển dụng, xu hướng và phân bố lương)
+- `/accounts/register/`, `/accounts/login/`: xác thực
+- `/candidates/profile/`: hồ sơ, tải lên và phân tích CV tự động (drag & drop)
+- `/employers/profile/`, `/employers/jobs/`: hồ sơ và quản lý tin
+- `/employers/jobs/<id>/applicants/`: xếp hạng ứng viên theo AI Matching, tính lại điểm và cập nhật trạng thái không cần reload trang
+- `/applications/`: danh sách hồ sơ đã ứng tuyển
+- `/admin/`: quản trị dữ liệu
+
+## Hệ thống API mới (Checklist 4)
+
+Chi tiết đặc tả: [docs/api-bi-ai.md](docs/api-bi-ai.md).
+
+- `GET/POST /api/match/preview/`: Tính điểm và giải thích Matching Score giữa ứng viên và việc làm.
+- `POST /api/match/rescore/<id>/`: Tính lại điểm tương thích cho toàn bộ ứng viên của tin tuyển dụng.
+- `POST /api/cv/parse/`: Tự động trích xuất kỹ năng, số năm kinh nghiệm, học vấn từ CV.
+- `POST /api/applications/<id>/status/`: Cập nhật trạng thái ứng viên theo thời gian thực.
+- `GET /api/bi/summary/`: Thống kê các chỉ số KPI tuyển dụng.
+- `GET /api/bi/skills/`: Thống kê Top kỹ năng Cung - Cầu thị trường.
+- `GET /api/bi/salary/`: Thống kê phân bố lương trung bình theo chức danh.
+- `GET /api/bi/funnel/`: Tỷ lệ chuyển đổi qua các vòng trong phễu tuyển dụng.
+- `GET /api/bi/trend/`: Xu hướng đăng tin và nộp hồ sơ theo thời gian.
 
 ## Kiểm thử
 
 ```powershell
-pytest
+python manage.py check
+python manage.py test
 ```
 
-## Cấu trúc
+`seed_demo_data` tạo thêm 100 ứng viên, 20 nhà tuyển dụng, 50 tin tuyển dụng,
+100 CV PDF mẫu, dữ liệu kỹ năng và 200 hồ sơ ứng tuyển. Command có thể chạy lặp
+lại mà không nhân đôi dữ liệu demo.
 
-```text
-He_Thong_Tim_Viec/
-├── app/
-│   ├── db/
-│   ├── models/
-│   ├── schemas/
-│   └── main.py
-├── docs/
-│   ├── phan-tich-yeu-cau.md
-│   └── thiet-ke-co-so-du-lieu.md
-├── migrations/
-│   └── 001_initial_schema.sql
-├── postgresql/
-│   ├── 001_schema.sql
-│   ├── 002_seed.sql
-│   ├── 003_views.sql
-│   └── 004_data_quality.sql
-├── tests/
-├── .env.example
-├── alembic.ini
-└── requirements.txt
+## AI Matching (phân tích CV và điểm tương thích)
+
+Mô hình Machine Learning chạy cục bộ bằng scikit-learn, không gọi API AI bên
+ngoài. Chi tiết thiết kế, đặc trưng và kết quả đánh giá: [docs/mo-hinh-ai-matching.md](docs/mo-hinh-ai-matching.md).
+
+```powershell
+python manage.py train_matching_model                     # huấn luyện (mặc định: dữ liệu mô phỏng)
+python manage.py train_matching_model --source combined   # khi đã có kết quả tuyển dụng thật
+python manage.py rescore_applications                     # phân tích lại CV và tính lại điểm
 ```
+
+- Mô hình lưu tại `ml_models/matching_model.joblib` (đổi bằng biến môi trường
+  `MATCHING_MODEL_PATH`), kèm báo cáo chỉ số `matching_model.json`.
+- Chưa huấn luyện thì hệ thống tự dùng **Rule-based Matching** làm phương án dự phòng.
+- CV PDF (dạng văn bản) và DOCX được phân tích tự động khi tải lên; file `.doc`
+  và PDF dạng ảnh scan chưa trích xuất được nội dung.
+- Nhà tuyển dụng xem bảng xếp hạng ứng viên tại `/employers/jobs/<id>/applicants/`;
+  ứng viên thấy điểm phù hợp trên trang chi tiết tin tuyển dụng.
