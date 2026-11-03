@@ -1,6 +1,133 @@
 {% extends "base.html" %}
-{% block title %}Tìm cơ hội phù hợp với bạn{% endblock %}
+{% block title %}Smart Recruitment · Nền tảng nghề nghiệp & AI Matching{% endblock %}
+
 {% block content %}
-<section class="hero"><div class="container hero-content"><div class="row align-items-center"><div class="col-lg-7"><div class="eyebrow mb-3">Nền tảng nghề nghiệp thông minh</div><h1 class="text-white fw-bold">Tìm đúng việc.<br><span class="text-info">Bắt đầu tương lai.</span></h1><p class="lead text-white-50 mt-4 mb-4">Khám phá hàng trăm cơ hội dành cho sinh viên và người mới đi làm, được hỗ trợ bởi dữ liệu và AI Matching.</p><form action="{% url 'job-list' %}" class="search-panel row g-2"><div class="col-md-5"><label class="visually-hidden" for="hero-q">Từ khóa</label><input id="hero-q" name="q" class="form-control" placeholder="Chức danh, kỹ năng..."></div><div class="col-md-4"><label class="visually-hidden" for="hero-location">Địa điểm</label><input id="hero-location" name="location" class="form-control" placeholder="Địa điểm"></div><div class="col-md-3"><button class="btn btn-primary w-100 h-100"><i class="bi bi-search me-1"></i> Tìm việc</button></div></form><div class="d-flex gap-4 mt-4 text-white-50 small"><span><i class="bi bi-check-circle text-info me-1"></i> Cơ hội xác thực</span><span><i class="bi bi-check-circle text-info me-1"></i> Matching thông minh</span></div></div><div class="col-lg-4 offset-lg-1 d-none d-lg-block"><div class="card p-4 border-0 shadow-lg"><div class="d-flex align-items-center gap-3"><div class="logo-placeholder"><i class="bi bi-graph-up-arrow"></i></div><div><div class="fw-bold">AI Career Insights</div><small class="text-muted">Dữ liệu giúp bạn đi xa hơn</small></div></div><div class="mt-4 p-3 bg-light rounded-3"><small class="text-muted">Cơ hội phù hợp với kỹ năng của bạn</small><div class="progress mt-2" style="height:8px"><div class="progress-bar" style="width:88%"></div></div><div class="text-primary fw-bold mt-2">88% tương thích</div></div></div></div></div></div></section>
-<div class="container py-5"><div class="d-flex justify-content-between align-items-end mb-4"><div><div class="section-label">Cơ hội mới nhất</div><h2 class="section-title mb-0 mt-2">Việc làm nổi bật</h2></div><a href="{% url 'job-list' %}" class="btn btn-link text-decoration-none">Xem tất cả <i class="bi bi-arrow-right"></i></a></div><div class="row g-4">{% for job in featured_jobs %}<div class="col-md-6 col-lg-4">{% include "jobs/_card.html" %}</div>{% empty %}<div class="empty-state">Chưa có việc làm nổi bật.</div>{% endfor %}</div><section class="card border-0 p-4 p-lg-5 mt-5 overflow-hidden"><div class="row align-items-center"><div class="col-lg-8"><div class="section-label">AI Matching</div><h2 class="section-title mt-2">Cơ hội phù hợp hơn,<br>tương lai rõ ràng hơn.</h2><p class="text-muted mb-0">Hệ thống phân tích kỹ năng, kinh nghiệm và mục tiêu nghề nghiệp để giúp bạn hiểu rõ mức độ phù hợp với từng vị trí.</p></div><div class="col-lg-4 text-center mt-4 mt-lg-0"><i class="bi bi-stars display-1 text-primary"></i></div></div></section></div>
+<!-- Hero Section (A1.1) -->
+<section class="hero py-5">
+  <div class="container hero-content">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="eyebrow mb-3">Nền tảng nghề nghiệp thông minh</div>
+        <h1 class="text-white fw-bold display-5">
+          Tìm đúng việc.<br><span class="text-info">Bứt phá tương lai.</span>
+        </h1>
+        <p class="lead text-white-50 mt-3 mb-4">
+          Khám phá cơ hội nghề nghiệp phù hợp nhất cho sinh viên và người đi làm, được hỗ trợ bởi công nghệ gợi ý và AI Matching chuẩn xác.
+        </p>
+
+        <!-- Fast Search with Autocomplete (A1.2) -->
+        <form action="{% url 'job-list' %}" class="search-panel row g-2" method="get">
+          <div class="col-md-5">
+            <label class="visually-hidden" for="hero-q">Từ khóa hoặc kỹ năng</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input id="hero-q" name="q" list="skills-datalist" class="form-control border-start-0" placeholder="Chức danh, kỹ năng (Python, SQL...)" autocomplete="off">
+            </div>
+            <datalist id="skills-datalist">
+              {% for skill_name in all_skills %}
+                <option value="{{ skill_name }}">
+              {% endfor %}
+            </datalist>
+          </div>
+          <div class="col-md-4">
+            <label class="visually-hidden" for="hero-location">Địa điểm</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+              <input id="hero-location" name="location" class="form-control border-start-0" placeholder="Hà Nội, TP.HCM...">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-primary w-100 h-100 fw-semibold" type="submit">
+              <i class="bi bi-search me-1"></i> Tìm việc ngay
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Stats Banner (A1.1) -->
+        <div class="d-flex flex-wrap gap-4 mt-4 pt-2 text-white border-top border-white-50">
+          <div>
+            <div class="h4 fw-bold mb-0 text-white">{{ stats.jobs_count }}</div>
+            <div class="small text-white-50">Việc làm đang tuyển</div>
+          </div>
+          <div>
+            <div class="h4 fw-bold mb-0 text-white">{{ stats.candidates_count }}</div>
+            <div class="small text-white-50">Ứng viên tài năng</div>
+          </div>
+          <div>
+            <div class="h4 fw-bold mb-0 text-white">{{ stats.applications_count }}</div>
+            <div class="small text-white-50">Lượt ứng tuyển</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Illustration / AI Preview Box -->
+      <div class="col-lg-4 offset-lg-1 d-none d-lg-block">
+        <div class="card p-4 border-0 shadow-lg bg-white rounded-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="logo-placeholder"><i class="bi bi-stars fs-4"></i></div>
+            <div>
+              <div class="fw-bold text-dark">AI Matching Engine</div>
+              <small class="text-muted">Độ tương thích hồ sơ theo kỹ năng</small>
+            </div>
+          </div>
+          <div class="mt-4 p-3 bg-light rounded-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">Tỷ lệ tương thích với CV</small>
+              <strong class="text-success">92% Match</strong>
+            </div>
+            <div class="progress mt-2" style="height:8px">
+              <div class="progress-bar bg-success" style="width:92%"></div>
+            </div>
+            <div class="small text-muted mt-2">
+              <i class="bi bi-check-circle-fill text-success me-1"></i>Đã khớp: Python, Machine Learning, SQL
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Jobs -->
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+      <div class="section-label">Cơ hội mới nhất</div>
+      <h2 class="section-title mb-0 mt-2">Việc làm nổi bật</h2>
+    </div>
+    <a href="{% url 'job-list' %}" class="btn btn-link text-decoration-none fw-semibold">
+      Xem tất cả việc làm <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+
+  <div class="row g-4">
+    {% for job in featured_jobs %}
+      <div class="col-md-6 col-lg-4">
+        {% include "jobs/_card.html" %}
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="empty-state p-4 text-center">Chưa có việc làm nổi bật.</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- AI Matching Info Banner -->
+  <section class="card border-0 p-4 p-lg-5 mt-5 bg-light-subtle rounded-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <div class="section-label">Công nghệ tuyển dụng thông minh</div>
+        <h2 class="section-title mt-2">Đúng người, đúng việc với AI Matching</h2>
+        <p class="text-muted mb-0 leading-relaxed">
+          Thuật toán tự động phân tích CV, trích xuất kỹ năng, kinh nghiệm thực tế và so khớp với yêu cầu tuyển dụng để giúp bạn tiết kiệm thời gian và tìm được công việc ưng ý nhất.
+        </p>
+      </div>
+      <div class="col-lg-4 text-center mt-4 mt-lg-0">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-lg shadow-sm">
+          <i class="bi bi-bar-chart-line me-1"></i> Khám phá BI Dashboard
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
 {% endblock %}

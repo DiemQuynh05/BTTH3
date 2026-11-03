@@ -1,7 +1,134 @@
 {% extends "base.html" %}
-{% block title %}Khám phá việc làm{% endblock %}
+{% block title %}Khám phá việc làm · Smart Recruitment{% endblock %}
+
 {% block content %}
-<div class="container"><header class="page-header"><div class="section-label">Cơ hội nghề nghiệp</div><h1 class="section-title mt-2 mb-2">Khám phá việc làm phù hợp</h1><p class="text-muted mb-0">Tìm kiếm cơ hội tiếp theo để bắt đầu và phát triển sự nghiệp của bạn.</p></header>
-<form class="filter-panel mb-5" method="get"><div class="row g-2 align-items-end"><div class="col-lg-4"><label class="form-label" for="q">Từ khóa</label><div class="input-group"><span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span><input id="q" name="q" value="{{ filters.q }}" class="form-control border-start-0" placeholder="Ví dụ: Data Analyst"></div></div><div class="col-lg-3"><label class="form-label" for="location">Địa điểm</label><div class="input-group"><span class="input-group-text bg-white border-end-0"><i class="bi bi-geo-alt text-muted"></i></span><input id="location" name="location" value="{{ filters.location }}" class="form-control border-start-0" placeholder="Hà Nội, TP.HCM..."></div></div><div class="col-lg-3"><label class="form-label" for="job_type">Loại hình</label><select id="job_type" name="job_type" class="form-select"><option value="">Tất cả loại hình</option>{% for value,label in job_types %}<option value="{{ value }}" {% if filters.job_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i> Lọc</button>{% if filters.q or filters.location or filters.job_type %}<a href="{% url 'job-list' %}" class="btn btn-light border" aria-label="Xóa bộ lọc"><i class="bi bi-x-lg"></i></a>{% endif %}</div></div></form>
-<div class="d-flex justify-content-between align-items-center mb-3"><div class="fw-semibold">{{ page.paginator.count }} <span class="text-muted fw-normal">việc làm phù hợp</span></div><div class="text-muted small">Sắp xếp: Mới nhất</div></div><div class="row g-4">{% for job in page %}<div class="col-md-6 col-lg-4">{% include "jobs/_card.html" %}</div>{% empty %}<div class="col-12"><div class="empty-state"><i class="bi bi-search display-4"></i><h4 class="mt-3">Không tìm thấy việc làm</h4><p>Hãy thử thay đổi từ khóa hoặc bộ lọc.</p><a href="{% url 'job-list' %}" class="btn btn-outline-primary">Xóa bộ lọc</a></div></div>{% endfor %}</div>{% if page.paginator.num_pages > 1 %}<nav class="mt-5" aria-label="Phân trang"><ul class="pagination justify-content-center">{% if page.has_previous %}<li class="page-item"><a class="page-link" href="?q={{ filters.q }}&location={{ filters.location }}&job_type={{ filters.job_type }}&page={{ page.previous_page_number }}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}{% for number in page.paginator.page_range %}<li class="page-item {% if page.number == number %}active{% endif %}"><a class="page-link" href="?q={{ filters.q }}&location={{ filters.location }}&job_type={{ filters.job_type }}&page={{ number }}">{{ number }}</a></li>{% endfor %}{% if page.has_next %}<li class="page-item"><a class="page-link" href="?q={{ filters.q }}&location={{ filters.location }}&job_type={{ filters.job_type }}&page={{ page.next_page_number }}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}</ul></nav>{% endif %}</div>
+<div class="container py-4">
+  <header class="page-header pt-0 mb-4">
+    <div class="section-label">Cơ hội nghề nghiệp</div>
+    <h1 class="section-title mt-2 mb-2">Khám phá việc làm phù hợp</h1>
+    <p class="text-muted mb-0">Tìm kiếm cơ hội tiếp theo để bắt đầu và phát triển sự nghiệp của bạn cùng công nghệ AI Matching.</p>
+  </header>
+
+  <!-- Filter Panel (A1.2, A1.3) -->
+  <form class="filter-panel mb-4 shadow-sm border" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-3">
+        <label class="form-label small fw-bold" for="q">Từ khóa / Kỹ năng</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input id="q" name="q" value="{{ filters.q }}" list="skills-datalist" class="form-control border-start-0" placeholder="Chức danh, kỹ năng..." autocomplete="off">
+          <datalist id="skills-datalist">
+            {% for skill_name in all_skills %}
+              <option value="{{ skill_name }}">
+            {% endfor %}
+          </datalist>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small fw-bold" for="location">Địa điểm</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+          <input id="location" name="location" value="{{ filters.location }}" class="form-control border-start-0" placeholder="Hà Nội, TP.HCM...">
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small fw-bold" for="job_type">Loại hình</label>
+        <select id="job_type" name="job_type" class="form-select">
+          <option value="">Tất cả loại hình</option>
+          {% for value, label in job_types %}
+            <option value="{{ value }}" {% if filters.job_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-3 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1" type="submit">
+          <i class="bi bi-funnel me-1"></i> Lọc việc làm
+        </button>
+        {% if filters.q or filters.location or filters.job_type or filters.skill %}
+          <a href="{% url 'job-list' %}" class="btn btn-light border" title="Xóa bộ lọc" aria-label="Xóa bộ lọc">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Skill Filter Tags (A1.3) -->
+    {% if popular_skills %}
+      <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center gap-1">
+        <span class="small text-muted me-2 fw-semibold"><i class="bi bi-tags me-1"></i>Kỹ năng nổi bật:</span>
+        {% for sk in popular_skills %}
+          <a href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.location %}location={{ filters.location }}&{% endif %}{% if filters.job_type %}job_type={{ filters.job_type }}&{% endif %}skill={{ sk.name }}"
+             class="badge text-decoration-none {% if filters.skill == sk.name %}bg-primary text-white{% else %}bg-light text-dark border{% endif %} px-2 py-1">
+            {{ sk.name }}
+          </a>
+        {% endfor %}
+        {% if filters.skill %}
+          <input type="hidden" name="skill" value="{{ filters.skill }}">
+          <a href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.location %}location={{ filters.location }}&{% endif %}{% if filters.job_type %}job_type={{ filters.job_type }}{% endif %}" class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-none px-2 py-1">
+            <i class="bi bi-x me-1"></i>Bỏ chọn: {{ filters.skill }}
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </form>
+
+  <!-- Job Count and Sort -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="fw-semibold">
+      {{ page.paginator.count }} <span class="text-muted fw-normal">việc làm phù hợp</span>
+    </div>
+    <div class="text-muted small">Sắp xếp: Mới nhất</div>
+  </div>
+
+  <!-- Job Cards Grid -->
+  <div class="row g-4">
+    {% for job in page %}
+      <div class="col-md-6 col-lg-4">
+        {% include "jobs/_card.html" %}
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="empty-state p-5 text-center">
+          <i class="bi bi-search display-4 text-primary opacity-50"></i>
+          <h4 class="mt-3 fw-bold">Không tìm thấy việc làm phù hợp</h4>
+          <p class="text-muted">Hãy thử thay đổi từ khóa, vị trí hoặc xóa bớt tiêu chí lọc.</p>
+          <a href="{% url 'job-list' %}" class="btn btn-outline-primary mt-2">
+            <i class="bi bi-arrow-clockwise me-1"></i> Xóa bộ lọc
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination preserving filter params (A1.4) -->
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="mt-5" aria-label="Phân trang">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.location %}location={{ filters.location }}&{% endif %}{% if filters.job_type %}job_type={{ filters.job_type }}&{% endif %}{% if filters.skill %}skill={{ filters.skill }}&{% endif %}page={{ page.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+
+        {% for number in page.paginator.page_range %}
+          <li class="page-item {% if page.number == number %}active{% endif %}">
+            <a class="page-link" href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.location %}location={{ filters.location }}&{% endif %}{% if filters.job_type %}job_type={{ filters.job_type }}&{% endif %}{% if filters.skill %}skill={{ filters.skill }}&{% endif %}page={{ number }}">
+              {{ number }}
+            </a>
+          </li>
+        {% endfor %}
+
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.location %}location={{ filters.location }}&{% endif %}{% if filters.job_type %}job_type={{ filters.job_type }}&{% endif %}{% if filters.skill %}skill={{ filters.skill }}&{% endif %}page={{ page.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
 {% endblock %}

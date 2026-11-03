@@ -1,3 +1,102 @@
 {% extends "base.html" %}
-{% block title %}Quản lý tin tuyển dụng{% endblock %}
-{% block content %}<div class="container py-5"><div class="d-flex flex-wrap justify-content-between align-items-end gap-3 page-header pt-0"><div><div class="section-label">Không gian doanh nghiệp</div><h1 class="section-title mt-2 mb-0">Tin tuyển dụng của tôi</h1></div><a class="btn btn-primary" href="{% url 'employer-job-create' %}"><i class="bi bi-plus-lg me-1"></i> Tạo tin mới</a></div><div class="card overflow-hidden"><div class="table-responsive"><table class="table table-modern align-middle"><thead><tr><th>Chức danh</th><th>Địa điểm</th><th>Loại hình</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead><tbody>{% for job in jobs %}<tr><td><a class="fw-semibold text-decoration-none" href="{% url 'job-detail' job.pk %}">{{ job.title }}</a><div class="small text-muted">Cập nhật {{ job.updated_at|date:"d/m/Y" }}</div></td><td>{{ job.location }}</td><td>{{ job.get_job_type_display }}</td><td><span class="status-badge status-{{ job.status|lower }}">{{ job.get_status_display }}</span></td><td class="text-end"><a href="{% url 'employer-job-applicants' job.pk %}" class="btn btn-sm btn-light border me-1"><i class="bi bi-people"></i> Ứng viên</a><a href="{% url 'employer-job-edit' job.pk %}" class="btn btn-sm btn-light border me-1"><i class="bi bi-pencil"></i> Sửa</a><a href="{% url 'employer-job-delete' job.pk %}" class="btn btn-sm btn-light border text-danger"><i class="bi bi-trash"></i></a></td></tr>{% empty %}<tr><td colspan="5"><div class="empty-state m-3">Bạn chưa có tin tuyển dụng.</div></td></tr>{% endfor %}</tbody></table></div></div></div>{% endblock %}
+{% block title %}Quản lý tin tuyển dụng · Smart Recruitment{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 page-header pt-0 mb-4">
+    <div>
+      <div class="section-label">Không gian doanh nghiệp</div>
+      <h1 class="section-title mt-2 mb-1">Quản lý tin tuyển dụng</h1>
+      <p class="text-muted mb-0">Theo dõi, điều chỉnh trạng thái và xem danh sách hồ sơ ứng viên cho từng tin.</p>
+    </div>
+    <div>
+      <a class="btn btn-primary" href="{% url 'employer-job-create' %}">
+        <i class="bi bi-plus-lg me-1"></i> Đăng tin mới
+      </a>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden shadow-sm border">
+    <div class="table-responsive">
+      <table class="table table-modern align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Chức danh & Địa điểm</th>
+            <th>Loại hình</th>
+            <th>Hạn nộp hồ sơ</th>
+            <th>Số ứng viên</th>
+            <th>Trạng thái</th>
+            <th class="text-end">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+            <tr>
+              <td>
+                <a class="fw-bold text-decoration-none text-dark d-block" href="{% url 'job-detail' job.pk %}">
+                  {{ job.title }}
+                </a>
+                <div class="small text-muted d-flex align-items-center gap-2 mt-1">
+                  <span><i class="bi bi-geo-alt me-1 text-primary"></i>{{ job.location }}</span>
+                  <span>•</span>
+                  <span>Cập nhật: {{ job.updated_at|date:"d/m/Y" }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge text-bg-light border text-muted">
+                  {{ job.get_job_type_display }}
+                </span>
+              </td>
+              <td>
+                {% if job.deadline %}
+                  <span class="small {% if job.is_expired %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                    <i class="bi bi-calendar3 me-1"></i>{{ job.deadline|date:"d/m/Y" }}
+                  </span>
+                {% else %}
+                  <span class="small text-muted">Tuyển liên tục</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'employer-job-applicants' job.pk %}" class="badge text-bg-primary-subtle text-primary border border-primary-subtle text-decoration-none px-2 py-1">
+                  <i class="bi bi-people-fill me-1"></i> {{ job.applicant_count }} ứng viên
+                </a>
+              </td>
+              <td>
+                <span class="status-badge status-{{ job.status|lower }}">
+                  {{ job.get_status_display }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a href="{% url 'employer-job-applicants' job.pk %}" class="btn btn-light border" title="Xem & Xếp hạng ứng viên">
+                    <i class="bi bi-people"></i> Ứng viên
+                  </a>
+                  <a href="{% url 'employer-job-edit' job.pk %}" class="btn btn-light border" title="Chỉnh sửa tin">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'employer-job-delete' job.pk %}" class="btn btn-light border text-danger" title="Xóa tin">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state border-0 p-5 text-center">
+                  <i class="bi bi-briefcase display-4 text-muted opacity-50"></i>
+                  <h5 class="mt-3 fw-bold">Chưa có tin tuyển dụng nào</h5>
+                  <p class="text-muted">Bắt đầu tiếp cận các ứng viên tiềm năng bằng cách tạo tin tuyển dụng đầu tiên.</p>
+                  <a href="{% url 'employer-job-create' %}" class="btn btn-primary mt-2">
+                    <i class="bi bi-plus-lg me-1"></i> Đăng tin tuyển dụng
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-this-secret-key")
-DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [
     host for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,testserver").split(",") if host
 ]
@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "employers",
     "jobs",
     "applications",
+    "api",
 ]
 
 MIDDLEWARE = [

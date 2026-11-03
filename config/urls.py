@@ -11,6 +11,7 @@ urlpatterns = [
     path("candidates/", include("candidates.urls")),
     path("employers/", include("employers.urls")),
     path("applications/", include("applications.urls")),
+    path("api/", include("api.urls")),
 ]
 
 handler403 = "django_app.views.error_403"
